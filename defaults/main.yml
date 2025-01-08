@@ -1,0 +1,10 @@
+consul_port: 8500
+consul_scheme: "http"
+#netbox_url: ""
+#netbox_token: ""
+#consul_url: ""
+#consul_token: ""
+# consul_services:
+# - name: node_exporter
+#   service_port: 9100
+#   host: 1.1.1.1

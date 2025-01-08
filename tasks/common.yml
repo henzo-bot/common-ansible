@@ -1,0 +1,60 @@
+- name: Debian & Ubuntu Install dependencies
+  become: yes
+  timeout: 30
+  ignore_errors: yes
+  ansible.builtin.apt:
+    update_cache: yes
+    name: 
+      - python3
+      - python3-pip
+      - curl
+      - htop
+      - nload
+      - iotop
+      - net-tools
+      - smartmontools
+      - acpi
+      - python3-pynetbox
+      - qemu-guest-agent
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+
+- name: Centos Install dependencies
+  become: yes
+  timeout: 30
+  ignore_errors: yes
+  ansible.builtin.yum:
+    name: 
+      - python3
+      - python3-pip
+      - curl
+      - smartmontools
+    state: present
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat'
+
+- name: Debian & Ubuntu Install dependencies
+  become: yes
+  timeout: 30
+  ignore_errors: yes
+  ansible.builtin.apt:
+    update_cache: yes
+    name: 
+      - qemu-guest-agent
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+  
+- name: Install qemu-guest-agent if the machine is a VPS
+  become: yes
+  timeout: 30
+  ignore_errors: yes
+  apt:
+    name: qemu-guest-agent
+    state: present
+  when: machine != "physical"
+
+- name: Start qemu-guest-agent service if the machine is a VPS
+  become: yes
+  timeout: 30
+  ignore_errors: yes
+  service:
+    name: qemu-guest-agent
+    state: started
+  when: machine != "physical"

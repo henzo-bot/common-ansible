@@ -1,0 +1,101 @@
+- name: Install pynetbox with pip3
+  ansible.builtin.pip:
+    name: pynetbox
+    executable: /usr/bin/pip3
+    
+- shell: grep -c ^processor /proc/cpuinfo
+  register: cpu_number
+
+- shell: grep MemTotal /proc/meminfo | awk '{print $2}'
+  register: memory_ram
+
+- name: Create cluster type within NetBox with only required information
+  netbox.netbox.netbox_cluster_type:
+    netbox_url: "{{ netbox_url }}"
+    netbox_token: "{{ netbox_token }}"
+    data:
+      name: Proxmox
+    state: present
+
+- name: Create cluster within NetBox with only required information
+  netbox.netbox.netbox_cluster:
+    netbox_url: "{{ netbox_url }}"
+    netbox_token: "{{ netbox_token }}"
+    data:
+      name: "{{ location }}"
+      cluster_type: Proxmox
+    state: present
+
+- name: Create tenant within NetBox
+  netbox.netbox.netbox_tenant:
+    netbox_url: "{{ netbox_url }}"
+    netbox_token: "{{ netbox_token }}"
+    data:
+      name: "{{ client }}"
+    state: present
+
+- name: Create device role within NetBox
+  netbox.netbox.netbox_device_role:
+    netbox_url: "{{ netbox_url }}"
+    netbox_token: "{{ netbox_token }}"
+    data:
+      name: "{{ group }}"
+    state: present
+
+- name: Update vcpus, memory and disk of an existing virtual machine
+  netbox.netbox.netbox_virtual_machine:
+    netbox_url: "{{ netbox_url }}"
+    netbox_token: "{{ netbox_token }}"
+    data:
+      name: "{{ inventory_hostname }}"
+      cluster: "{{ location }}"
+      vcpus: "1"
+      memory: "1"
+      disk: "1"
+      status: Active
+      tenant: "{{ client }}"
+      platform: Ubuntu
+      virtual_machine_role: "{{ group }}"
+    state: present
+
+- name: Create interface within NetBox with only required information
+  netbox.netbox.netbox_vm_interface:
+    netbox_url: "{{ netbox_url }}"
+    netbox_token: "{{ netbox_token }}"
+    data:
+      virtual_machine: "{{ inventory_hostname }}"
+      name: eth0
+    state: present
+
+- name: Create IP address and assign a  VM
+  netbox.netbox.netbox_ip_address:
+    netbox_url: "{{ netbox_url }}"
+    netbox_token: "{{ netbox_token }}"
+    data:
+      address: "{{ ansible_host }}/24"
+      assigned_object:
+        name: eth0
+        virtual_machine: "{{ inventory_hostname }}"
+
+- name: Configure primary IP
+  netbox.netbox.netbox_virtual_machine:
+    netbox_url: "{{ netbox_url }}"
+    netbox_token: "{{ netbox_token }}"
+    data:
+      name: "{{ inventory_hostname }}"
+      primary_ip4: "{{ ansible_host }}/24"
+    state: present
+
+- name: Create service
+  netbox.netbox.netbox_service:
+    netbox_url: "{{ netbox_url }}"
+    netbox_token: "{{ netbox_token }}"
+    data:
+      virtual_machine: "{{ inventory_hostname }}"
+      name: "{{ item.name }}"
+      port: "{{ item.service_port }}"
+      protocol: tcp
+      ipaddresses:
+        - address: "{{ ansible_host }}/24"
+    state: present
+  with_items: "{{ consul_services }}"

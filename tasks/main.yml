@@ -1,0 +1,9 @@
+- name: Include common tasks
+  include_tasks: common.yml
+
+# - name: Include netbox tasks
+#   include_tasks: netbox.yml
+#   when: netbox_url is defined and machine == "virtual"
+
+- name: Include consul tasks
+  include_tasks: consul.yml

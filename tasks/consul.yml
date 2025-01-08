@@ -1,0 +1,26 @@
+- name: Register services to consul
+  ansible.builtin.uri:
+    url: http://{{ item.1.consul_url }}:{{ consul_port }}/v1/agent/service/register
+    method: PUT
+    body: '{
+      "ID":"{{ inventory_hostname }}_{{ item.0.name }}",
+      "Name":"{{ item.0.name }}",
+      "Address":"{{ ansible_host }}",
+      "Tags":[
+        "client={{ client }}",
+        "location={{ location }}",
+        "env={{ env }}",
+        "group={{ group }}",
+        "machine={{ machine }}",
+        "hostname={{ inventory_hostname }}"
+      ],
+      "Port":{{ item.0.service_port }}
+    }'
+    body_format: json
+    headers:
+      X-Consul-Token: "{{ item.1.consul_token }}"
+  with_nested:
+    - "{{ consul_services }}"
+    - "{{ consul_hosts }}"
+  when: consul_hosts is defined
+  delegate_to: localhost
